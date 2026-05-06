@@ -53,21 +53,25 @@ local typeCache = {}
 
 --// FAST TYPE
 local function getType(name)
-    if typeCache[name] then return unpack(typeCache[name]) end
+    if typeCache[name] then
+        return typeCache[name][1], typeCache[name][2]
+    end
+
     for t,data in pairs(ESP_TYPES) do
         for _,n in ipairs(data.list) do
-            if n==name then
-                typeCache[name]={t,data.color}
-                return t,data.color
+            if n == name or string.find(name, n) then
+                typeCache[name] = {t, data.color}
+                return t, data.color
             end
         end
     end
 end
 
---// ROOT FIX MODEL
+--// GET ROOT (ANTI MISS)
 local function getRoot(obj)
-    if obj:IsA("BasePart") then return obj end
-    if obj:IsA("Model") then
+    if obj:IsA("BasePart") then
+        return obj
+    elseif obj:IsA("Model") then
         return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
     end
 end
@@ -98,13 +102,18 @@ local function createESP(obj)
     text.Font = Enum.Font.GothamBold
     text.Parent = gui
 
-    espList[obj] = {gui=gui,text=text,type=t,root=root}
+    espList[obj] = {
+        gui = gui,
+        text = text,
+        type = t,
+        root = root
+    }
 end
 
---// UPDATE
+--// UPDATE LOOP
 local last = 0
-runService.Heartbeat:Connect(function()
-    if tick()-last < 0.1 then return end
+runService.RenderStepped:Connect(function()
+    if tick() - last < 0.1 then return end
     last = tick()
 
     local char = player.Character
@@ -114,45 +123,43 @@ runService.Heartbeat:Connect(function()
     for obj,data in pairs(espList) do
         if not obj or not obj.Parent or not data.root then
             if data.gui then data.gui:Destroy() end
-            espList[obj]=nil
+            espList[obj] = nil
         else
             if not Toggles[data.type] then
-                data.gui.Enabled=false
+                data.gui.Enabled = false
             else
                 local dist = (hrp.Position - data.root.Position).Magnitude
+
                 if dist > MAX_DISTANCE then
-                    data.gui.Enabled=false
+                    data.gui.Enabled = false
                 else
-                    data.gui.Enabled=true
-                    data.text.Text = obj.Name.." ["..math.floor(dist).."m]"
+                    data.gui.Enabled = true
+                    data.text.Text = string.format("%s [%dm]", obj.Name, math.floor(dist))
                 end
             end
         end
     end
 end)
 
---// FILTER SCAN (GIẢM LAG)
-local function valid(name)
-    return typeCache[name] or getType(name)
-end
-
+--// SCAN (ANTI MISS)
 task.spawn(function()
     for _,v in ipairs(workspace:GetDescendants()) do
-        if valid(v.Name) then
-            createESP(v)
-        end
+        createESP(v)
     end
 end)
 
+--// ADD (RETRY FIX)
 workspace.DescendantAdded:Connect(function(v)
-    task.delay(0.3,function()
-        if valid(v.Name) then
+    task.spawn(function()
+        for i = 1,5 do
+            task.wait(0.2)
             createESP(v)
+            if espList[v] then break end
         end
     end)
 end)
 
---// UI TOGGLES
+--// UI
 Home:AddToggle({Name="Weapon ESP", Callback=function(v) Toggles.Weapon=v end})
 Home:AddToggle({Name="Breakable ESP", Callback=function(v) Toggles.Breakable=v end})
 Home:AddToggle({Name="Item ESP", Callback=function(v) Toggles.Item=v end})
