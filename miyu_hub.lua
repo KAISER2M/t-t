@@ -15,79 +15,59 @@ local MAX_DISTANCE = 333
 
 --// TOGGLES
 local Toggles = {
-    Weapon = false,
-    Breakable = false,
-    Item = false,
-    Gun = false,
-    Med = false,
-    Ammo = false,
-    Fuel = false,
-    Food = false,
-    Crate = false,
-    Battery = false,
-    Armor = false,
-    Throwable = false,
-    Backpack = false
+    Weapon=false,Breakable=false,Item=false,Gun=false,Med=false,
+    Ammo=false,Fuel=false,Food=false,Crate=false,Battery=false,
+    Armor=false,Throwable=false,Backpack=false
 }
 
---// CONFIG ESP
+--// CONFIG
 local ESP_TYPES = {
-    Weapon = {color = Color3.fromRGB(255,50,50), list = {"Bat","Knife","Crowbar","Spiked Bat","Spear","Hatchet","Katana","Fire Axe","Sledgehammer","Riot Shield","Scythe","Dark Scythe","Bloodthirster","Chainsaw"}},
-    Breakable = {color = Color3.fromRGB(200,200,200), list = {"Barrel","Military Box","Scrap Pile","Refined Scrap Pile"}},
-    Item = {color = Color3.fromRGB(255,255,0), list = {"Scrap","Tray","Reactor Component","Screws","Spatula","Dumbell","Refined Metal","Bucket","Watch","TV","AC"}},
-    Gun = {color = Color3.fromRGB(150,75,0), list = {"Pistol","Minigun","Medi Gun","Revolver","Uzi","Shotgun","Rifle","Assault Rifle","Double Barrel","Ak-47","Sniper","SVD","Combat SMG","AA-12","LMG","Desert Eagle","Heavy Sniper","Ray Gun","Flamethrower","Grenade Launcher"}},
-    Med = {color = Color3.fromRGB(0,255,100), list = {"Bandage","Medkit","Compound R","Compound I","Compound S"}},
-    Ammo = {color = Color3.fromRGB(180,180,180), list = {"Long Ammo","Medium Ammo","Shells","Pistol Ammo","Ammo Box"}},
-    Fuel = {color = Color3.fromRGB(0,200,255), list = {"Fuel","Refined Fuel","Nuclear Fuel"}},
-    Food = {color = Color3.fromRGB(255,140,0), list = {"Carrot","Bloxy Cola","Bloxiade","Beans","Chips","MRE"}},
-    Crate = {color = Color3.fromRGB(255,165,0), list = {"Crate","Better Crate","Emerald Chest","Reactor Crate","Mystery Box"}},
-    Battery = {color = Color3.fromRGB(170,0,255), list = {"Battery","Battery Pack"}},
-    Armor = {color = Color3.fromRGB(255,105,180), list = {"Light Armor","Medium Armor","Heavy Armor","Power Armor","Gas Mask"}},
-    Throwable = {color = Color3.fromRGB(210,180,140), list = {"Grenade","Molotov","Flashbang","Tear Gas"}},
-    Backpack = {color = Color3.fromRGB(0,255,200), list = {"Basic Backpack","Good Backpack","Great Backpack"}}
+    Weapon={color=Color3.fromRGB(255,50,50),list={"Bat","Knife","Crowbar","Spiked Bat","Spear","Hatchet","Katana","Fire Axe","Sledgehammer","Riot Shield","Scythe","Dark Scythe","Bloodthirster","Chainsaw"}},
+    Breakable={color=Color3.fromRGB(200,200,200),list={"Barrel","Military Box","Scrap Pile","Refined Scrap Pile"}},
+    Item={color=Color3.fromRGB(255,255,0),list={"Scrap","Tray","Reactor Component","Screws","Spatula","Dumbell","Refined Metal","Bucket","Watch","TV","AC"}},
+    Gun={color=Color3.fromRGB(150,75,0),list={"Pistol","Minigun","Medi Gun","Revolver","Uzi","Shotgun","Rifle","Assault Rifle","Double Barrel","Ak-47","Sniper","SVD","Combat SMG","AA-12","LMG","Desert Eagle","Heavy Sniper","Ray Gun","Flamethrower","Grenade Launcher"}},
+    Med={color=Color3.fromRGB(0,255,100),list={"Bandage","Medkit","Compound R","Compound I","Compound S"}},
+    Ammo={color=Color3.fromRGB(180,180,180),list={"Long Ammo","Medium Ammo","Shells","Pistol Ammo","Ammo Box"}},
+    Fuel={color=Color3.fromRGB(0,200,255),list={"Fuel","Refined Fuel","Nuclear Fuel"}},
+    Food={color=Color3.fromRGB(255,140,0),list={"Carrot","Bloxy Cola","Bloxiade","Beans","Chips","MRE"}},
+    Crate={color=Color3.fromRGB(255,165,0),list={"Crate","Better Crate","Emerald Chest","Reactor Crate","Mystery Box"}},
+    Battery={color=Color3.fromRGB(170,0,255),list={"Battery","Battery Pack"}},
+    Armor={color=Color3.fromRGB(255,105,180),list={"Light Armor","Medium Armor","Heavy Armor","Power Armor","Gas Mask"}},
+    Throwable={color=Color3.fromRGB(210,180,140),list={"Grenade","Molotov","Flashbang","Tear Gas"}},
+    Backpack={color=Color3.fromRGB(0,255,200),list={"Basic Backpack","Good Backpack","Great Backpack"}}
 }
 
 --// STORAGE
 local espList = {}
 local typeCache = {}
 
---// FAST TYPE CHECK
+--// FAST TYPE
 local function getType(name)
-    if typeCache[name] then
-        return unpack(typeCache[name])
-    end
-
-    for typeName, data in pairs(ESP_TYPES) do
-        for _, item in ipairs(data.list) do
-            if item == name then
-                typeCache[name] = {typeName, data.color}
-                return typeName, data.color
+    if typeCache[name] then return unpack(typeCache[name]) end
+    for t,data in pairs(ESP_TYPES) do
+        for _,n in ipairs(data.list) do
+            if n==name then
+                typeCache[name]={t,data.color}
+                return t,data.color
             end
         end
     end
 end
 
---// GET ROOT PART (FIX MODEL CHUẨN)
+--// ROOT FIX MODEL
 local function getRoot(obj)
-    if obj:IsA("BasePart") then
-        return obj
-    elseif obj:IsA("Model") then
+    if obj:IsA("BasePart") then return obj end
+    if obj:IsA("Model") then
         return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
     end
-end
-
---// GET POSITION
-local function getPosition(obj)
-    local root = getRoot(obj)
-    return root and root.Position
 end
 
 --// CREATE ESP
 local function createESP(obj)
     if espList[obj] then return end
 
-    local typeName, color = getType(obj.Name)
-    if not typeName then return end
+    local t,color = getType(obj.Name)
+    if not t then return end
 
     local root = getRoot(obj)
     if not root then return end
@@ -97,7 +77,7 @@ local function createESP(obj)
     gui.AlwaysOnTop = true
     gui.StudsOffset = Vector3.new(0,1.5,0)
     gui.MaxDistance = MAX_DISTANCE
-    gui.Parent = root -- FIX CHÍNH Ở ĐÂY
+    gui.Parent = root
 
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1,0,1,0)
@@ -108,58 +88,74 @@ local function createESP(obj)
     text.Font = Enum.Font.GothamBold
     text.Parent = gui
 
-    espList[obj] = {
-        gui = gui,
-        text = text,
-        type = typeName,
-        root = root -- lưu root để tối ưu
-    }
+    espList[obj] = {gui=gui,text=text,type=t,root=root}
 end
 
---// UPDATE LOOP (0.1s cho mượt nhưng vẫn nhẹ)
-local lastUpdate = 0
+--// UPDATE
+local last = 0
 runService.Heartbeat:Connect(function()
-    if tick() - lastUpdate < 0.1 then return end
-    lastUpdate = tick()
+    if tick()-last < 0.1 then return end
+    last = tick()
 
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    for obj, data in pairs(espList) do
+    for obj,data in pairs(espList) do
         if not obj or not obj.Parent or not data.root then
             if data.gui then data.gui:Destroy() end
-            espList[obj] = nil
+            espList[obj]=nil
         else
             if not Toggles[data.type] then
-                data.gui.Enabled = false
+                data.gui.Enabled=false
             else
-                local pos = data.root.Position
-                local dist = (hrp.Position - pos).Magnitude
-
+                local dist = (hrp.Position - data.root.Position).Magnitude
                 if dist > MAX_DISTANCE then
-                    data.gui.Enabled = false
+                    data.gui.Enabled=false
                 else
-                    data.gui.Enabled = true
-                    data.text.Text = string.format("%s [%dm]", obj.Name, dist)
+                    data.gui.Enabled=true
+                    data.text.Text = obj.Name.." ["..math.floor(dist).."m]"
                 end
             end
         end
     end
 end)
 
---// SCAN
+--// FILTER SCAN (GIẢM LAG)
+local function valid(name)
+    return typeCache[name] or getType(name)
+end
+
 task.spawn(function()
-    for _, v in ipairs(workspace:GetDescendants()) do
-        createESP(v)
+    for _,v in ipairs(workspace:GetDescendants()) do
+        if valid(v.Name) then
+            createESP(v)
+        end
     end
 end)
 
 workspace.DescendantAdded:Connect(function(v)
-    task.delay(0.3, function()
-        createESP(v)
+    task.delay(0.3,function()
+        if valid(v.Name) then
+            createESP(v)
+        end
     end)
 end)
+
+--// UI TOGGLES
+Home:AddToggle({Name="Weapon ESP", Callback=function(v) Toggles.Weapon=v end})
+Home:AddToggle({Name="Breakable ESP", Callback=function(v) Toggles.Breakable=v end})
+Home:AddToggle({Name="Item ESP", Callback=function(v) Toggles.Item=v end})
+Home:AddToggle({Name="Gun ESP", Callback=function(v) Toggles.Gun=v end})
+Home:AddToggle({Name="Med ESP", Callback=function(v) Toggles.Med=v end})
+Home:AddToggle({Name="Ammo ESP", Callback=function(v) Toggles.Ammo=v end})
+Home:AddToggle({Name="Fuel ESP", Callback=function(v) Toggles.Fuel=v end})
+Home:AddToggle({Name="Food ESP", Callback=function(v) Toggles.Food=v end})
+Home:AddToggle({Name="Crate ESP", Callback=function(v) Toggles.Crate=v end})
+Home:AddToggle({Name="Battery ESP", Callback=function(v) Toggles.Battery=v end})
+Home:AddToggle({Name="Armor ESP", Callback=function(v) Toggles.Armor=v end})
+Home:AddToggle({Name="Throwable ESP", Callback=function(v) Toggles.Throwable=v end})
+Home:AddToggle({Name="Backpack ESP", Callback=function(v) Toggles.Backpack=v end})
 
 -----------------------------------------------------------------------------------------------------------//
 
