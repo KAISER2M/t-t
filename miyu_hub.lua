@@ -15,9 +15,19 @@ local MAX_DISTANCE = 333
 
 --// TOGGLES
 local Toggles = {
-    Weapon=false,Breakable=false,Item=false,Gun=false,Med=false,
-    Ammo=false,Fuel=false,Food=false,Crate=false,Battery=false,
-    Armor=false,Throwable=false,Backpack=false
+    Weapon=false,
+    Breakable=false,
+    Item=false,
+    Gun=false,
+    Med=false,
+    Ammo=false,
+    Fuel=false,
+    Food=false,
+    Crate=false,
+    Battery=false,
+    Armor=false,
+    Throwable=false,
+    Backpack=false
 }
 
 --// CONFIG
