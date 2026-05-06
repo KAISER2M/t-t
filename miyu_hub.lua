@@ -54,7 +54,7 @@ local typeCache = {}
 --// FAST TYPE CHECK
 local function getType(name)
     if typeCache[name] then
-        return typeCache[name][1], typeCache[name][2]
+        return unpack(typeCache[name])
     end
 
     for typeName, data in pairs(ESP_TYPES) do
@@ -67,14 +67,19 @@ local function getType(name)
     end
 end
 
+--// GET ROOT PART (FIX MODEL CHUẨN)
+local function getRoot(obj)
+    if obj:IsA("BasePart") then
+        return obj
+    elseif obj:IsA("Model") then
+        return obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+    end
+end
+
 --// GET POSITION
 local function getPosition(obj)
-    if obj:IsA("BasePart") then
-        return obj.Position
-    elseif obj:IsA("Model") then
-        local part = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-        return part and part.Position
-    end
+    local root = getRoot(obj)
+    return root and root.Position
 end
 
 --// CREATE ESP
@@ -84,14 +89,15 @@ local function createESP(obj)
     local typeName, color = getType(obj.Name)
     if not typeName then return end
 
-    local pos = getPosition(obj)
-    if not pos then return end
+    local root = getRoot(obj)
+    if not root then return end
 
     local gui = Instance.new("BillboardGui")
     gui.Size = UDim2.new(0,110,0,30)
     gui.AlwaysOnTop = true
     gui.StudsOffset = Vector3.new(0,1.5,0)
     gui.MaxDistance = MAX_DISTANCE
+    gui.Parent = root -- FIX CHÍNH Ở ĐÂY
 
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1,0,1,0)
@@ -102,19 +108,18 @@ local function createESP(obj)
     text.Font = Enum.Font.GothamBold
     text.Parent = gui
 
-    gui.Parent = obj
-
     espList[obj] = {
         gui = gui,
         text = text,
-        type = typeName
+        type = typeName,
+        root = root -- lưu root để tối ưu
     }
 end
 
---// UPDATE LOOP -- FIX: RenderStepped → Heartbeat + interval 0.3s
+--// UPDATE LOOP (0.1s cho mượt nhưng vẫn nhẹ)
 local lastUpdate = 0
 runService.Heartbeat:Connect(function()
-    if tick() - lastUpdate < 0.3 then return end
+    if tick() - lastUpdate < 0.1 then return end
     lastUpdate = tick()
 
     local char = player.Character
@@ -122,16 +127,14 @@ runService.Heartbeat:Connect(function()
     if not hrp then return end
 
     for obj, data in pairs(espList) do
-        if not obj or not obj.Parent then
-            data.gui:Destroy()
+        if not obj or not obj.Parent or not data.root then
+            if data.gui then data.gui:Destroy() end
             espList[obj] = nil
         else
             if not Toggles[data.type] then
                 data.gui.Enabled = false
             else
-                local pos = getPosition(obj)
-                if not pos then continue end
-
+                local pos = data.root.Position
                 local dist = (hrp.Position - pos).Magnitude
 
                 if dist > MAX_DISTANCE then
@@ -152,27 +155,11 @@ task.spawn(function()
     end
 end)
 
--- FIX: delay 0.1 → 0.5
 workspace.DescendantAdded:Connect(function(v)
-    task.delay(0.5, function()
+    task.delay(0.3, function()
         createESP(v)
     end)
 end)
-
---// UI TOGGLES
-Home:AddToggle({Name="Weapon ESP", Callback=function(v) Toggles.Weapon=v end})
-Home:AddToggle({Name="Breakable ESP", Callback=function(v) Toggles.Breakable=v end})
-Home:AddToggle({Name="Item ESP", Callback=function(v) Toggles.Item=v end})
-Home:AddToggle({Name="Gun ESP", Callback=function(v) Toggles.Gun=v end})
-Home:AddToggle({Name="Med ESP", Callback=function(v) Toggles.Med=v end})
-Home:AddToggle({Name="Ammo ESP", Callback=function(v) Toggles.Ammo=v end})
-Home:AddToggle({Name="Fuel ESP", Callback=function(v) Toggles.Fuel=v end})
-Home:AddToggle({Name="Food ESP", Callback=function(v) Toggles.Food=v end})
-Home:AddToggle({Name="Crate ESP", Callback=function(v) Toggles.Crate=v end})
-Home:AddToggle({Name="Battery ESP", Callback=function(v) Toggles.Battery=v end})
-Home:AddToggle({Name="Armor ESP", Callback=function(v) Toggles.Armor=v end})
-Home:AddToggle({Name="Throwable ESP", Callback=function(v) Toggles.Throwable=v end})
-Home:AddToggle({Name="Backpack ESP", Callback=function(v) Toggles.Backpack=v end})
 
 -----------------------------------------------------------------------------------------------------------//
 
